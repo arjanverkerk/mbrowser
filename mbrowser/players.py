@@ -3,7 +3,10 @@
 from socket import AF_UNIX, socket as Socket
 from contextlib import contextmanager
 import json
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 
 class Player:
@@ -25,6 +28,9 @@ class Player:
         data = json.dumps({"command": command}) + '\n'
         with self.connect() as client:
             client.send(data.encode("ascii"))
+            response = client.recv(4096)
+            logger.debug(response)
 
     def loadfile(self, path):
         self.send("loadfile", path)
+        self.send("set", "pause", "no")  # sometimes video starts paused
