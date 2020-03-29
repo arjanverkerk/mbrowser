@@ -1,0 +1,8 @@
+# virtualenv
+.venv
+
+# compiled stuff
+*.py[cod]
+
+# egg
+mbrowser.egg-info/
