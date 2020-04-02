@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+mpv \
+--idle \
+--force-window=yes \
+--keep-open=always \
+--geometry=50%x50%+100%+0% \
+--input-ipc-server=$MBROWSER_SOCKET \

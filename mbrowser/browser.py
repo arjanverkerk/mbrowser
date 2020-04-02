@@ -37,30 +37,35 @@ def browser(window):
     # components
     player = Player()
     maxy, maxx = window.getmaxyx()
-    status = newwin(1, maxx, maxy, 0)
-    status.addstr("This is the status line / window")
+    status = newwin(10, maxx, maxy - 10, 0)
+    status.border()
     status.refresh()
+    status = newwin(8, maxx - 2, maxy - 9, 1)
+    status.addstr(7, 0, "This is the status line / window")
+    status.scrollok(True)
     directory = Directory()
 
     # main loop
     while True:
-        c = status.getch(0, 0)
-        if c == ord('a'):
-            player.loadfile("this.png")
-        if c == ord('b'):
-            player.loadfile("that.png")
-        if c == ord('j'):
-            path = directory.down()
-            if path is not None:
-                logger.debug(path)
-                player.loadfile(path)
-        if c == ord('k'):
-            path = directory.up()
-            if path is not None:
-                logger.debug(path)
-                player.loadfile(path)
-        if c == ord('q'):
-            break
+        try:
+            c = status.getch(0, 0)
+            if c == ord('j'):
+                path = directory.down()
+                if path is not None:
+                    logger.debug(path)
+                    player.loadfile(path)
+            if c == ord('k'):
+                path = directory.up()
+                if path is not None:
+                    logger.debug(path)
+                    player.loadfile(path)
+            if c == ord('c'):
+                crash
+            if c == ord('q'):
+                break
+        except Exception as error:
+            status.scroll(1)
+            status.addstr(7, 0, str(error))
 
 
 def main():
