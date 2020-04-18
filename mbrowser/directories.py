@@ -20,7 +20,7 @@ class Directory:
         pointer.refresh()
 
         self.paths = [
-            p for p in listdir()
+            p for p in sorted(listdir())
             if splitext(p)[1][1:].lower() in MEDIA
         ]
 

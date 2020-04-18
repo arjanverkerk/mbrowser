@@ -5,14 +5,16 @@ import logging
 # from curses import error, echo
 from curses import noecho
 from curses import curs_set
-from curses import newwin
 from curses import use_default_colors
 from curses import wrapper
 
 from os import environ
 
 from .players import Player
-from .directories import Directory
+from .widgets import SelectWidget
+from .widgets import MessageWidget
+from .widgets import BaseWidget
+# from .directories import Directory
 
 logger = logging.getLogger(__name__)
 
@@ -34,38 +36,56 @@ def browser(window):
     curs_set(0)           # no cursor
     noecho()              # no characters
 
-    # components
+    # widget
     player = Player()
-    maxy, maxx = window.getmaxyx()
-    status = newwin(10, maxx, maxy - 10, 0)
-    status.border()
-    status.refresh()
-    status = newwin(8, maxx - 2, maxy - 9, 1)
-    status.addstr(7, 0, "This is the status line / window")
-    status.scrollok(True)
-    directory = Directory()
+    # directory = Directory()
+
+    select_widget = SelectWidget(
+        parent=window,
+        geometry=(0.5, 1.0, 0.0, 0.0),
+        border=True,
+        title="Select",
+    )
+    message_widget = MessageWidget(
+        parent=window,
+        geometry=(0.5, 0.5, 1.0, 1.0),
+        border=True,
+        title="Message",
+    )
+    base_widget = BaseWidget(
+        parent=window,
+        geometry=(0.5, 0.5, 1.0, 0.0),
+        border=True,
+        title="Test",
+    )
+    message_widget.send("Status ok.")
+
+    base_widget
 
     # main loop
     while True:
         try:
-            c = status.getch(0, 0)
+            c = message_widget.window.getch(0, 0)
             if c == ord('j'):
-                path = directory.down()
+                path = select_widget.down()
                 if path is not None:
                     logger.debug(path)
                     player.loadfile(path)
             if c == ord('k'):
-                path = directory.up()
+                path = select_widget.up()
                 if path is not None:
                     logger.debug(path)
                     player.loadfile(path)
+            if c == ord('x'):
+                y = 1 / 0
             if c == ord('c'):
                 crash
+            if c == ord('v'):
+                crush
             if c == ord('q'):
                 break
         except Exception as error:
-            status.scroll(1)
-            status.addstr(7, 0, str(error))
+            message_widget.send(str(error))
 
 
 def main():
