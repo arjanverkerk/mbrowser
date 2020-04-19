@@ -46,6 +46,7 @@ def browser(window):
         border=True,
         title="Select",
     )
+    select_widget.load()
     message_widget = MessageWidget(
         parent=window,
         geometry=(0.5, 0.5, 1.0, 1.0),

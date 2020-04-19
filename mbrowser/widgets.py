@@ -68,6 +68,17 @@ class SelectWidget(BaseWidget):
     def load(self, path=None):
         self.names = 20 * ["file1", "file2", "file3"]
         self.position = 0
+        w, h = self.window.getmaxyx()
+        self.pad = newpad(len(self.names), w - 2)
+        for y, name in enumerate(self.names):
+            self.pad.addstr(y, 0, name)
+        self.refresh()
+
+    def refresh(self):
+        h, w = self.window.getmaxyx()
+        y, x = self.window.getbegyx()
+        self.pad.refresh(self.position, 0, y + 1, x + 1, y + h - 2, x + w - 2)
+
         # self.pad =
         # make pad with correct size
         # position pad in window
@@ -76,19 +87,21 @@ class SelectWidget(BaseWidget):
     def current(self):
         return self.names[self.position]
 
-    def down(self):
+    def up(self):
         if self.position > 0:
-            self.disable()
+            # self.disable()
             self.position -= 1
-            self.enable()
+            self.refresh()
+            # self.enable()
             return self.current
         # scroll if needed
 
-    def up(self):
+    def down(self):
         if self.position < len(self.names) - 1:
-            self.disable()
+            # self.disable()
             self.position += 1
-            self.enable()
+            self.refresh()
+            # self.enable()
         # scroll if needed
 
 
