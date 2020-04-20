@@ -19,8 +19,13 @@ class Player:
     @staticmethod
     @contextmanager
     def connect():
+        # TODO replace wiwth multiprocessing connection, or streams
         client = Socket(AF_UNIX)
-        client.connect(os.environ['MBROWSER_SOCKET'])
+        socket = os.environ['MBROWSER_SOCKET']
+        try:
+            client.connect(socket)
+        except OSError:
+            raise OSError(f"Mplayer not listening on {socket}")
         yield client
         client.close()
 

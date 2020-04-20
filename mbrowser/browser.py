@@ -12,8 +12,8 @@ from os import environ
 
 from .players import Player
 from .widgets import SelectWidget
+from .widgets import SubtitleWidget
 from .widgets import MessageWidget
-from .widgets import BaseWidget
 # from .directories import Directory
 
 logger = logging.getLogger(__name__)
@@ -46,36 +46,39 @@ def browser(window):
         border=True,
         title="Select",
     )
-    select_widget.load()
+    subtitle_widget = SubtitleWidget(
+        parent=window,
+        geometry=(0.5, 0.5, 1.0, 0.0),
+        border=True,
+        title="Subtitle",
+    )
     message_widget = MessageWidget(
         parent=window,
         geometry=(0.5, 0.5, 1.0, 1.0),
         border=True,
         title="Message",
     )
-    base_widget = BaseWidget(
-        parent=window,
-        geometry=(0.5, 0.5, 1.0, 0.0),
-        border=True,
-        title="Test",
-    )
     message_widget.send("Status ok.")
 
-    base_widget
-
+    select_widget.load("album.lst")
+    path = select_widget.current
+    player.loadfile(path)
+    subtitle_widget.load(path)
     # main loop
     while True:
         try:
             c = message_widget.window.getch(0, 0)
             if c == ord('j'):
-                path = select_widget.down()
-                if path is not None:
-                    logger.debug(path)
+                select_widget.down()
+                if select_widget.current != path:
+                    path = select_widget.current
+                    subtitle_widget.load(path)
                     player.loadfile(path)
             if c == ord('k'):
-                path = select_widget.up()
-                if path is not None:
-                    logger.debug(path)
+                select_widget.up()
+                if select_widget.current != path:
+                    path = select_widget.current
+                    subtitle_widget.load(path)
                     player.loadfile(path)
             if c == ord('x'):
                 y = 1 / 0

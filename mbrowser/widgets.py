@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from curses import A_BOLD
 from curses import newpad
 from curses import newwin
+from os.path import abspath
+from os.path import splitext
 import logging
 
 logger = logging.getLogger(__name__)
@@ -66,43 +69,70 @@ class SelectWidget(BaseWidget):
         super().__init__(*args, **kwargs)
 
     def load(self, path=None):
-        self.names = 20 * ["file1", "file2", "file3"]
-        self.position = 0
+        try:
+            with open(path) as lst_file:
+                self.names = [line.strip() for line in lst_file.readlines()]
+        except OSError:
+            self.names = 20 * [
+                "giraffe/file1",
+                "zebra/file2",
+                "clownfish/file3",
+            ]
+
+        self.pos1 = 0  # selected name
+        self.pos2 = 0  # pad offset
         w, h = self.window.getmaxyx()
         self.pad = newpad(len(self.names), w - 2)
-        for y, name in enumerate(self.names):
-            self.pad.addstr(y, 0, name)
+        for pos1 in range(len(self.names)):
+            self.addstr(pos=pos1, selected=(pos1 == 0))
         self.refresh()
 
     def refresh(self):
         h, w = self.window.getmaxyx()
         y, x = self.window.getbegyx()
-        self.pad.refresh(self.position, 0, y + 1, x + 1, y + h - 2, x + w - 2)
-
-        # self.pad =
-        # make pad with correct size
-        # position pad in window
+        if self.pos2 > self.pos1:
+            self.pos2 = self.pos1
+        if self.pos2 < self.pos1 - (h - 3):
+            self.pos2 = self.pos1 - (h - 3)
+        self.pad.refresh(self.pos2, 0, y + 1, x + 1, y + h - 2, x + w - 2)
 
     @property
     def current(self):
-        return self.names[self.position]
+        return abspath(self.names[self.pos1])
+
+    def addstr(self, pos, selected=False):
+        args = [A_BOLD] if selected else []
+        self.pad.addstr(pos, 0, self.names[pos], *args)
 
     def up(self):
-        if self.position > 0:
-            # self.disable()
-            self.position -= 1
+        if self.pos1 > 0:
+            self.addstr(pos=self.pos1)
+            self.pos1 -= 1
+            self.addstr(pos=self.pos1, selected=True)
             self.refresh()
-            # self.enable()
-            return self.current
-        # scroll if needed
 
     def down(self):
-        if self.position < len(self.names) - 1:
-            # self.disable()
-            self.position += 1
+        if self.pos1 < len(self.names) - 1:
+            self.addstr(pos=self.pos1)
+            self.pos1 += 1
+            self.addstr(pos=self.pos1, selected=True)
             self.refresh()
-            # self.enable()
-        # scroll if needed
+
+
+class SubtitleWidget(BaseWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def load(self, path):
+        h, w = self.window.getmaxyx()
+        window = self.window.derwin(h - 2, w - 2, 1, 1)
+        srt_path = splitext(path)[0] + ".srt"
+        window.addstr(0, 0, f"{srt_path}:")
+        with open(srt_path) as srt_file:
+            lines = srt_file.readlines()
+        for y, line in enumerate(lines, 1):
+            window.addstr(y, 0, line.strip())
+        window.refresh()
 
 
 class MessageWidget(BaseWidget):
@@ -115,7 +145,7 @@ class MessageWidget(BaseWidget):
         """
         h, w = self.window.getmaxyx()
         window = self.window.derwin(h - 2, w - 2, 1, 1)
-        window.refresh()
+        # window.refresh()
         window.scrollok(True)
         window.scroll(1)
         window.addstr(h - 3, 0, message)
