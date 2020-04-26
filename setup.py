@@ -14,5 +14,5 @@ setup(
     author='Arjan Verkerk',
     packages=['mbrowser'],
     author_email='arjan.verkerk@gmail.com',
-    entry_points={'console_scripts': ['mb=mbrowser.browser:main']},
+    entry_points={'console_scripts': ['mb=mbrowser.mbrowser:main']},
 )
