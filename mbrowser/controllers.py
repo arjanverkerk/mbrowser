@@ -6,6 +6,7 @@ from multiprocessing.connection import Listener
 from json import loads
 from json import dumps
 from logging import getLogger
+from os.path import abspath
 from os.path import splitext
 
 from .players import Player
@@ -32,7 +33,7 @@ def quit_server():
 
 def get_paths():
     with open("album.lst") as lst_file:
-        return [line.strip() for line in lst_file.readlines()]
+        return [abspath(line.strip()) for line in lst_file.readlines()]
 
 
 def get_subtitle(path):
@@ -111,5 +112,6 @@ class ControllerClient:
         return self._comm(D_CONTROLLER, C_GSUB, path)
 
     def load_path(self, path):
-        self._comm(D_PLAYER, "loadfile", path)
+        response = self._comm(D_PLAYER, "loadfile", path)
         self._comm(D_PLAYER, "set", "pause", "no")  # in case video is paused
+        return response

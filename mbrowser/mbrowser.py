@@ -63,12 +63,17 @@ def gui(window, client):
     )
     status_widget.info("Status ok.")
 
-    try:
-        select_widget.set_paths(client.get_paths())
+    def _load():
         path = select_widget.current
-        client.load_path(path)
+        logger.debug(client.load_path(path))
         subtitle = client.get_subtitle(path)
         subtitle_widget.display(subtitle)
+        status_widget.info(f"load {path}")
+        return path
+
+    try:
+        select_widget.set_paths(client.get_paths())
+        path = _load()
     except Exception:
         logger.exception("Oops:")
         return
@@ -80,19 +85,11 @@ def gui(window, client):
             if c == ord("j"):
                 select_widget.down()
                 if select_widget.current != path:
-                    path = select_widget.current
-                    client.load_path(path)
-                    subtitle = client.get_subtitle(path)
-                    subtitle_widget.display(subtitle)
-                    status_widget.info(f"load {path}")
+                    path = _load()
             if c == ord("k"):
                 select_widget.up()
                 if select_widget.current != path:
-                    path = select_widget.current
-                    client.load_path(path)
-                    subtitle = client.get_subtitle(path)
-                    subtitle_widget.display(subtitle)
-                    status_widget.info(f"load {path}")
+                    path = _load()
             if c == ord("x"):
                 1 / 0
             if c == ord("c"):

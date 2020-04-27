@@ -4,9 +4,11 @@ from curses import A_BOLD
 from curses import newpad
 from curses import newwin
 from curses import color_pair
-import logging
 
-logger = logging.getLogger(__name__)
+from os.path import basename
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class BaseWidget:
@@ -92,7 +94,7 @@ class SelectWidget(BaseWidget):
 
     def addstr(self, pos, selected=False):
         args = [A_BOLD] if selected else []
-        self.pad.addstr(pos, 0, self.paths[pos], *args)
+        self.pad.addstr(pos, 0, basename(self.paths[pos]), *args)
 
     def up(self):
         if self.pos1 > 0:
