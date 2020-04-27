@@ -5,6 +5,9 @@ from contextlib import contextmanager
 from json import loads
 from json import dumps
 from os import environ
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class Player:
@@ -23,12 +26,17 @@ class Player:
         try:
             client.connect(socket)
         except OSError:
-            raise OSError(f"Mplayer not listening on {socket}")
+            raise OSError(f"MPV is not listening on {socket}")
         yield client
         client.close()
 
     def comm(self, *command):
-        data = dumps({"command": command}) + '\n'
-        with self.connect() as client:
-            client.send(data.encode("ascii"))
-            return loads(client.recv(4096).decode("ascii"))
+        data = (dumps({"command": command}) + '\n').encode("ascii")
+        try:
+            with self.connect() as client:
+                client.send(data)
+                data = (client.recv(4096).decode("ascii"))
+                # response may consist of multiple lines of individual json
+                return [loads(line) for line in data.strip().split("\n")]
+        except OSError as error:
+            return {"error": str(error)}

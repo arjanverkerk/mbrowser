@@ -5,7 +5,6 @@ from curses import newpad
 from curses import newwin
 from curses import color_pair
 from os.path import abspath
-from os.path import splitext
 import logging
 
 logger = logging.getLogger(__name__)
@@ -115,15 +114,11 @@ class SubtitleWidget(BaseWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def load(self, path):
+    def display(self, subtitle):
         h, w = self.window.getmaxyx()
         window = self.window.derwin(h - 2, w - 2, 1, 1)
-        srt_path = splitext(path)[0] + ".srt"
-        window.addstr(0, 0, f"{srt_path}:")
-        with open(srt_path) as srt_file:
-            lines = srt_file.readlines()
-        for y, line in enumerate(lines, 1):
-            window.addstr(y, 0, line.strip())
+        for y, line in enumerate(subtitle.split('\n')):
+            window.addstr(y, 0, line)
         window.refresh()
 
 
@@ -148,10 +143,10 @@ class StatusWidget(BaseWidget):
         window.refresh()
 
     def error(self, message):
-        self.add(message, color_pair(self.ERROR), A_BOLD)
+        self.add(message, color_pair(self.ERROR) | A_BOLD)
 
     def success(self, message):
-        self.add(message, color_pair(self.SUCCESS), A_BOLD)
+        self.add(message, color_pair(self.SUCCESS) | A_BOLD)
 
     def info(self, message):
-        self.add(message, color_pair(self.INFO), A_BOLD)
+        self.add(message, color_pair(self.INFO) | A_BOLD)

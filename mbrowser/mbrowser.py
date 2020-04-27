@@ -53,6 +53,7 @@ def gui(window, client):
         parent=window,
         geometry=(0.5, 0.5, 1.0, 0.0),
         border=True,
+        title='Subtitle',
     )
     status_widget = StatusWidget(
         parent=window,
@@ -62,12 +63,15 @@ def gui(window, client):
     )
     status_widget.info("Status ok.")
 
-    # select_widget.set_paths(client.get_paths())
-    # path = select_widget.current
-    # get the subtitle from the client
-    # let the client play
-
-    # subtitle_widget.load(path)
+    try:
+        select_widget.set_paths(client.get_paths())
+        path = select_widget.current
+        client.load_path(path)
+        subtitle = client.get_subtitle(path)
+        subtitle_widget.display(subtitle)
+    except Exception:
+        logger.exception("Oops:")
+        return
 
     # main loop
     while True:
@@ -77,14 +81,18 @@ def gui(window, client):
                 select_widget.down()
                 if select_widget.current != path:
                     path = select_widget.current
-                    # subtitle_widget.load(path)
-                    # player.loadfile(path)
+                    client.load_path(path)
+                    subtitle = client.get_subtitle(path)
+                    subtitle_widget.display(subtitle)
+                    status_widget.info(f"load {path}")
             if c == ord("k"):
                 select_widget.up()
                 if select_widget.current != path:
                     path = select_widget.current
-                    # subtitle_widget.load(path)
-                    # player.loadfile(path)
+                    client.load_path(path)
+                    subtitle = client.get_subtitle(path)
+                    subtitle_widget.display(subtitle)
+                    status_widget.info(f"load {path}")
             if c == ord("x"):
                 1 / 0
             if c == ord("c"):
