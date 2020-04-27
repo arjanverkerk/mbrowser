@@ -4,7 +4,6 @@ from curses import A_BOLD
 from curses import newpad
 from curses import newwin
 from curses import color_pair
-from os.path import abspath
 import logging
 
 logger = logging.getLogger(__name__)
@@ -89,7 +88,7 @@ class SelectWidget(BaseWidget):
 
     @property
     def current(self):
-        return abspath(self.paths[self.pos1])
+        return self.paths[self.pos1]
 
     def addstr(self, pos, selected=False):
         args = [A_BOLD] if selected else []

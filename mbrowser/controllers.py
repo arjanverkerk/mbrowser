@@ -6,6 +6,7 @@ from multiprocessing.connection import Listener
 from json import loads
 from json import dumps
 from logging import getLogger
+from os.path import abspath
 from os.path import splitext
 
 from .players import Player
@@ -111,5 +112,5 @@ class ControllerClient:
         return self._comm(D_CONTROLLER, C_GSUB, path)
 
     def load_path(self, path):
-        self._comm(D_PLAYER, "loadfile", path)
+        self._comm(D_PLAYER, "loadfile", abspath(path))
         self._comm(D_PLAYER, "set", "pause", "no")  # in case video is paused
