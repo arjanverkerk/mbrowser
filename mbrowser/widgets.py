@@ -3,6 +3,7 @@
 from curses import A_BOLD
 from curses import newpad
 from curses import newwin
+from curses import color_pair
 from os.path import abspath
 from os.path import splitext
 import logging
@@ -68,22 +69,13 @@ class SelectWidget(BaseWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def load(self, path=None):
-        try:
-            with open(path) as lst_file:
-                self.names = [line.strip() for line in lst_file.readlines()]
-        except OSError:
-            self.names = 20 * [
-                "giraffe/file1",
-                "zebra/file2",
-                "clownfish/file3",
-            ]
-
+    def set_paths(self, paths):
+        self.paths = paths
         self.pos1 = 0  # selected name
         self.pos2 = 0  # pad offset
         w, h = self.window.getmaxyx()
-        self.pad = newpad(len(self.names), w - 2)
-        for pos1 in range(len(self.names)):
+        self.pad = newpad(len(self.paths), w - 2)
+        for pos1 in range(len(self.paths)):
             self.addstr(pos=pos1, selected=(pos1 == 0))
         self.refresh()
 
@@ -98,11 +90,11 @@ class SelectWidget(BaseWidget):
 
     @property
     def current(self):
-        return abspath(self.names[self.pos1])
+        return abspath(self.paths[self.pos1])
 
     def addstr(self, pos, selected=False):
         args = [A_BOLD] if selected else []
-        self.pad.addstr(pos, 0, self.names[pos], *args)
+        self.pad.addstr(pos, 0, self.paths[pos], *args)
 
     def up(self):
         if self.pos1 > 0:
@@ -112,7 +104,7 @@ class SelectWidget(BaseWidget):
             self.refresh()
 
     def down(self):
-        if self.pos1 < len(self.names) - 1:
+        if self.pos1 < len(self.paths) - 1:
             self.addstr(pos=self.pos1)
             self.pos1 += 1
             self.addstr(pos=self.pos1, selected=True)
@@ -135,18 +127,31 @@ class SubtitleWidget(BaseWidget):
         window.refresh()
 
 
-class MessageWidget(BaseWidget):
+class StatusWidget(BaseWidget):
+
+    ERROR = 1
+    SUCCESS = 2
+    INFO = 3
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def send(self, message):
+    def add(self, message, *attr):
         """
         Scroll and Write a message in an inner window.
         """
         h, w = self.window.getmaxyx()
         window = self.window.derwin(h - 2, w - 2, 1, 1)
-        # window.refresh()
         window.scrollok(True)
         window.scroll(1)
-        window.addstr(h - 3, 0, message)
+        window.addstr(h - 3, 0, message, *attr)
         window.refresh()
+
+    def error(self, message):
+        self.add(message, color_pair(self.ERROR), A_BOLD)
+
+    def success(self, message):
+        self.add(message, color_pair(self.SUCCESS), A_BOLD)
+
+    def info(self, message):
+        self.add(message, color_pair(self.INFO), A_BOLD)

@@ -3,8 +3,12 @@
 Client GUI, Server MPV-controller or both.
 """
 
-from curses import noecho
+from curses import COLOR_BLUE
+from curses import COLOR_GREEN
+from curses import COLOR_RED
 from curses import curs_set
+from curses import init_pair
+from curses import noecho
 from curses import use_default_colors
 from curses import wrapper
 
@@ -12,33 +16,20 @@ from argparse import ArgumentParser
 from logging import DEBUG
 from logging import basicConfig
 from logging import getLogger
-from multiprocessing.connection import Client
-from multiprocessing.connection import Listener
 from os import environ
 from os import fork
 from time import sleep
 
-from .players import Player
+from .controllers import ControllerClient
+from .controllers import ControllerServer
 from .widgets import SelectWidget
+from .widgets import StatusWidget
 from .widgets import SubtitleWidget
-from .widgets import MessageWidget
-# from .directories import Directory
 
 logger = getLogger(__name__)
 
 
-def addr(text):
-    host, port = text.split(":")
-    return host, int(port)
-
-
-def client(window, connection):
-    logger.debug("in the client")
-    data = "sometest"
-    connection.send(data)
-    logger.debug(data)
-    assert data == connection.recv()
-    return
+def gui(window, client):
 
     # settings
     use_default_colors()  # gui colors
@@ -46,10 +37,12 @@ def client(window, connection):
     curs_set(0)           # no cursor
     noecho()              # no characters
 
-    # widget
-    player = Player()
-    # directory = Directory()
+    # colors
+    init_pair(StatusWidget.ERROR, COLOR_RED, -1)
+    init_pair(StatusWidget.SUCCESS, COLOR_GREEN, -1)
+    init_pair(StatusWidget.INFO, COLOR_BLUE, -1)
 
+    # widgets
     select_widget = SelectWidget(
         parent=window,
         geometry=(0.5, 1.0, 0.0, 0.0),
@@ -60,36 +53,38 @@ def client(window, connection):
         parent=window,
         geometry=(0.5, 0.5, 1.0, 0.0),
         border=True,
-        title="Subtitle",
     )
-    message_widget = MessageWidget(
+    status_widget = StatusWidget(
         parent=window,
         geometry=(0.5, 0.5, 1.0, 1.0),
         border=True,
-        title="Message",
+        title="Status",
     )
-    message_widget.send("Status ok.")
+    status_widget.info("Status ok.")
 
-    select_widget.load("album.lst")
-    path = select_widget.current
-    player.loadfile(path)
-    subtitle_widget.load(path)
+    # select_widget.set_paths(client.get_paths())
+    # path = select_widget.current
+    # get the subtitle from the client
+    # let the client play
+
+    # subtitle_widget.load(path)
+
     # main loop
     while True:
         try:
-            c = message_widget.window.getch(0, 0)
+            c = status_widget.window.getch(0, 0)
             if c == ord("j"):
                 select_widget.down()
                 if select_widget.current != path:
                     path = select_widget.current
-                    subtitle_widget.load(path)
-                    player.loadfile(path)
+                    # subtitle_widget.load(path)
+                    # player.loadfile(path)
             if c == ord("k"):
                 select_widget.up()
                 if select_widget.current != path:
                     path = select_widget.current
-                    subtitle_widget.load(path)
-                    player.loadfile(path)
+                    # subtitle_widget.load(path)
+                    # player.loadfile(path)
             if c == ord("x"):
                 1 / 0
             if c == ord("c"):
@@ -97,16 +92,15 @@ def client(window, connection):
             if c == ord("v"):
                 crush  # NOQA
             if c == ord("q"):
+                client.quit_server()
                 break
         except Exception as error:
-            message_widget.send(str(error))
+            status_widget.error(str(error))
 
 
-def controller(connection):
-    logger.debug("in the controller")
-    data = connection.recv()
-    logger.debug(f"controller echoing {data}")
-    connection.send(data)
+def addr(text):
+    host, port = text.split(":")
+    return host, int(port)
 
 
 def main():
@@ -127,19 +121,19 @@ def main():
     # connecting
     if args.listen:
         address = "0.0.0.0", args.listen
-        connection = Listener(address).accept()
-        controller(connection)
+        server = ControllerServer(address)
+        server.serve()
     elif args.connect:
         address = args.connect
-        connection = Client(address)
-        wrapper(client, connection)
+        client = ControllerClient(address)
+        wrapper(gui, client)
     else:
         # perform both roles locally
         address = "localhost", 1234
         if fork():
-            sleep(0.01)
-            connection = Client(address)
-            wrapper(client, connection)
+            server = ControllerServer(address)
+            server.serve()
         else:
-            connection = Listener(address).accept()
-            controller(connection)
+            sleep(0.01)  # give the server time to start
+            client = ControllerClient(address)
+            wrapper(gui, client)
