@@ -7,6 +7,7 @@ from json import loads
 from json import dumps
 from logging import getLogger
 from os.path import abspath
+from os.path import exists
 from os.path import splitext
 
 from .players import Player
@@ -21,6 +22,7 @@ C_QUIT = "quit"
 C_LIST = "list"
 C_LOAD = "load"
 C_GSUB = "gsub"
+C_SAVE = "save"
 
 
 class QuitServer(Exception):
@@ -50,10 +52,20 @@ def deserialize(data):
     return loads(data.decode("utf-8"))
 
 
+def save_file(name, content):
+    eol = "\n" if content else ""
+    if exists(name):
+        return f"'{name}' exists!"
+    with open(name, "w") as f:
+        f.write(content + eol)
+    return f"saved '{name}'."
+
+
 handlers = {
     C_QUIT: quit_server,
     C_LIST: get_paths,
     C_GSUB: get_subtitle,
+    C_SAVE: save_file,
 }
 
 
@@ -115,3 +127,6 @@ class ControllerClient:
         response = self._comm(D_PLAYER, "loadfile", path)
         self._comm(D_PLAYER, "set", "pause", "no")  # in case video is paused
         return response
+
+    def save(self, name, content):
+        return self._comm(D_CONTROLLER, C_SAVE, name, content)

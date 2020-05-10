@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from curses import A_BOLD
+from curses import color_pair
+from curses import echo
 from curses import newpad
 from curses import newwin
-from curses import color_pair
+from curses import noecho
 
 from os.path import basename
 from logging import getLogger
@@ -120,6 +122,9 @@ class SelectWidget(BaseWidget):
         self.addstr(pos=pos, selected=True)
         self.refresh()
 
+    def get_marked(self):
+        return [self.paths[i] for i in self.marked]
+
 
 class SubtitleWidget(BaseWidget):
     def __init__(self, *args, **kwargs):
@@ -161,3 +166,19 @@ class StatusWidget(BaseWidget):
 
     def info(self, message):
         self.add(message, color_pair(self.INFO) | A_BOLD)
+
+    def read(self, text):
+        """
+        Scroll and Write a message in an inner window.
+        """
+        prompt = text + ':  '
+        h, w = self.window.getmaxyx()
+        window = self.window.derwin(h - 2, w - 2, 1, 1)
+        window.scrollok(True)
+        window.scroll(1)
+        window.addstr(h - 3, 0, prompt)
+        window.refresh()
+        echo()
+        content = self.window.getstr(h - 2, len(prompt), 20).decode('utf-8')
+        noecho()
+        return content

@@ -93,7 +93,10 @@ def gui(window, client):
             if c == ord("a"):
                 select_widget.toggle()
             if c == ord("s"):
-                select_widget.export()
+                marked = select_widget.get_marked()
+                name = status_widget.read('name')
+                response = client.save(name, '\n'.join(marked))
+                status_widget.info(response)
             if c == ord("x"):
                 1 / 0
             if c == ord("c"):
