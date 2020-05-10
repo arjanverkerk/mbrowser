@@ -66,11 +66,10 @@ class BaseWidget:
 
 
 class SelectWidget(BaseWidget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def set_paths(self, paths):
         self.paths = paths
+        self.marked = set()
         self.pos1 = 0  # selected name
         self.pos2 = 0  # pad offset
         w, h = self.window.getmaxyx()
@@ -94,7 +93,9 @@ class SelectWidget(BaseWidget):
 
     def addstr(self, pos, selected=False):
         args = [A_BOLD] if selected else []
-        self.pad.addstr(pos, 0, basename(self.paths[pos]), *args)
+        prefix = '*' if pos in self.marked else ' '
+        content = basename(self.paths[pos])
+        self.pad.addstr(pos, 0, prefix + content, *args)
 
     def up(self):
         if self.pos1 > 0:
@@ -109,6 +110,15 @@ class SelectWidget(BaseWidget):
             self.pos1 += 1
             self.addstr(pos=self.pos1, selected=True)
             self.refresh()
+
+    def toggle(self):
+        pos = self.pos1
+        if pos in self.marked:
+            self.marked.remove(pos)
+        else:
+            self.marked.add(pos)
+        self.addstr(pos=pos, selected=True)
+        self.refresh()
 
 
 class SubtitleWidget(BaseWidget):

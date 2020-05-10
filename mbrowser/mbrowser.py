@@ -90,6 +90,10 @@ def gui(window, client):
                 select_widget.up()
                 if select_widget.current != path:
                     path = _load()
+            if c == ord("a"):
+                select_widget.toggle()
+            if c == ord("s"):
+                select_widget.export()
             if c == ord("x"):
                 1 / 0
             if c == ord("c"):
