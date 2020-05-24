@@ -27,6 +27,8 @@ from .widgets import SelectWidget
 from .widgets import StatusWidget
 from .widgets import SubtitleWidget
 
+PASS_THROUGH = {ord(c) for c in ",.p"}
+
 logger = getLogger(__name__)
 
 
@@ -65,19 +67,23 @@ def gui(window, client):
     status_widget.info("Status ok.")
 
     def _load():
+        """ Load currently selected media file into player. """
         path = select_widget.current
         logger.debug(client.load_path(path))
         subtitle = client.get_subtitle(path)
         subtitle_widget.display(subtitle)
         status_widget.info(f"load {path}")
-        return path
 
-    try:
-        select_widget.set_paths(client.get_paths())
-        path = _load()
-    except Exception:
-        logger.exception("Oops:")
-        return
+    def _reload():
+        """ Reload list of files in the current media directory. """
+        paths = client.get_paths()
+        if not isinstance(paths, list):
+            status_widget.error(paths)
+            return
+        select_widget.set_paths(paths)
+        _load()
+
+    _reload()
 
     # main loop
     while True:
@@ -86,11 +92,11 @@ def gui(window, client):
             if c == ord("j"):
                 select_widget.down()
                 if select_widget.current != path:
-                    path = _load()
+                    _load()
             if c == ord("k"):
                 select_widget.up()
                 if select_widget.current != path:
-                    path = _load()
+                    _load()
             if c == ord("a"):
                 select_widget.toggle()
             if c == ord("s"):
@@ -98,6 +104,8 @@ def gui(window, client):
                 name = status_widget.read('name')
                 response = client.save(name, '\n'.join(marked))
                 status_widget.info(response)
+            if c in PASS_THROUGH:
+                client.pass_key(chr(c))
             if c == ord("x"):
                 1 / 0
             if c == ord("c"):
@@ -107,6 +115,8 @@ def gui(window, client):
             if c == ord("q"):
                 client.quit_server()
                 break
+            if c == ord("r"):
+                _reload()
         except Exception as error:
             status_widget.error(str(error))
 
@@ -130,10 +140,6 @@ def main():
     group.add_argument("-l", "--listen", type=int)
     group.add_argument("-c", "--connect", type=addr)
     args = parser.parse_args()
-
-    if not exists("album.lst"):
-        print("album.lst not found.")
-        exit()
 
     # connecting
     if args.listen:
