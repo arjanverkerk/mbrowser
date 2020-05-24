@@ -34,6 +34,10 @@ class BaseWidget:
         self.window = self.draw()
         self.window.refresh()
 
+    def reset(self):
+        self.window = self.draw()
+        self.window.refresh()
+
     def set_title(self, title):
         self.title = title
         self.draw()
@@ -70,6 +74,7 @@ class BaseWidget:
 class SelectWidget(BaseWidget):
 
     def set_paths(self, paths):
+        self.reset()
         self.paths = paths
         self.marked = set()
         self.pos1 = 0  # selected name
@@ -171,7 +176,7 @@ class StatusWidget(BaseWidget):
         """
         Scroll and Write a message in an inner window.
         """
-        prompt = text + ':  '
+        prompt = text + ' '
         h, w = self.window.getmaxyx()
         window = self.window.derwin(h - 2, w - 2, 1, 1)
         window.scrollok(True)

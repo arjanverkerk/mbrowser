@@ -81,6 +81,7 @@ def gui(window, client):
             status_widget.error(paths)
             return
         select_widget.set_paths(paths)
+        status_widget.info("Directory reloaded.")
         return _load()
 
     path = _reload()
@@ -97,12 +98,18 @@ def gui(window, client):
                 select_widget.up()
                 if select_widget.current != path:
                     path = _load()
-            if c == ord("a"):
-                select_widget.toggle()
             if c == ord("s"):
+                select_widget.toggle()
+            if c == ord("e"):
+                name = status_widget.read('Export paths to: ')
                 marked = select_widget.get_marked()
-                name = status_widget.read('name')
-                response = client.save(name, '\n'.join(marked))
+                response = client.export_list(name, marked)
+                status_widget.info(response)
+            if c == ord("r"):
+                name = status_widget.read('Relocate files to: ')
+                marked = select_widget.get_marked()
+                response = client.relocate_media(name, marked)
+                _reload()
                 status_widget.info(response)
             if c in PASS_THROUGH:
                 client.pass_key(chr(c))
@@ -115,7 +122,7 @@ def gui(window, client):
             if c == ord("q"):
                 client.quit_server()
                 break
-            if c == ord("r"):
+            if c == ord("f"):
                 _reload()
         except Exception as error:
             status_widget.error(str(error))
