@@ -18,7 +18,6 @@ from logging import basicConfig
 from logging import getLogger
 from os import environ
 from os import fork
-from os.path import exists
 from time import sleep
 
 from .controllers import ControllerClient
@@ -73,6 +72,7 @@ def gui(window, client):
         subtitle = client.get_subtitle(path)
         subtitle_widget.display(subtitle)
         status_widget.info(f"load {path}")
+        return path
 
     def _reload():
         """ Reload list of files in the current media directory. """
@@ -81,9 +81,9 @@ def gui(window, client):
             status_widget.error(paths)
             return
         select_widget.set_paths(paths)
-        _load()
+        return _load()
 
-    _reload()
+    path = _reload()
 
     # main loop
     while True:
@@ -92,11 +92,11 @@ def gui(window, client):
             if c == ord("j"):
                 select_widget.down()
                 if select_widget.current != path:
-                    _load()
+                    path = _load()
             if c == ord("k"):
                 select_widget.up()
                 if select_widget.current != path:
-                    _load()
+                    path = _load()
             if c == ord("a"):
                 select_widget.toggle()
             if c == ord("s"):
