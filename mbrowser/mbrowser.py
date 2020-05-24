@@ -18,6 +18,7 @@ from logging import basicConfig
 from logging import getLogger
 from os import environ
 from os import fork
+from os.path import exists
 from time import sleep
 
 from .controllers import ControllerClient
@@ -129,6 +130,10 @@ def main():
     group.add_argument("-l", "--listen", type=int)
     group.add_argument("-c", "--connect", type=addr)
     args = parser.parse_args()
+
+    if not exists("album.lst"):
+        print("album.lst not found.")
+        exit()
 
     # connecting
     if args.listen:
