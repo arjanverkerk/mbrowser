@@ -108,6 +108,44 @@ handlers = {
 }
 
 
+class SubRip:
+    """
+    Mapper to control relevant parts of the subtitle file.
+    """
+
+    LINE_TIMESTAMP = 2
+    LINE_DESCRIPTION = 3
+
+    def __init__(self, path):
+        self.path = path
+        with open(self.path) as f:
+            self.lines = f.readlines()
+
+    def save(self):
+        with open(self.path, "w") as f:
+            f.writelines(self.lines)
+
+    # timestamp
+    def get_timestamp(self):
+        return self.lines[self.LINE_TIMESTAMP].strip()
+
+    def set_timestamp(self, timestamp):
+        self.lines[self.LINE_TIMESTAMP] = timestamp.strip() + "\n"
+        self.save()
+
+    timestamp = property(get_timestamp, set_timestamp)
+
+    # description
+    def get_description(self):
+        return self.lines[self.LINE_DESCRIPTION].strip()
+
+    def set_description(self, description):
+        self.lines[self.LINE_DESCRIPTION] = description.strip() + "\n"
+        self.save()
+
+    description = property(get_description, set_description)
+
+
 class ControllerServer:
     """
     Server side of the interface to the process that has access to the media
