@@ -20,6 +20,7 @@ from os import environ
 from os import fork
 from time import sleep
 
+from . import colors
 from .controllers import ControllerClient
 from .controllers import ControllerServer
 from .widgets import SelectWidget
@@ -40,30 +41,28 @@ def gui(window, client):
     noecho()              # no characters
 
     # colors
-    init_pair(StatusWidget.ERROR, COLOR_RED, -1)
-    init_pair(StatusWidget.SUCCESS, COLOR_GREEN, -1)
-    init_pair(StatusWidget.INFO, COLOR_BLUE, -1)
+    colors.initialize()
 
     # widgets
     select_widget = SelectWidget(
         parent=window,
         geometry=(0.5, 1.0, 0.0, 0.0),
-        border=True,
-        title="Select",
+        border=False,
+        title=None,
     )
     subtitle_widget = SubtitleWidget(
         parent=window,
         geometry=(0.5, 0.5, 1.0, 0.0),
-        border=True,
-        title='Subtitle',
+        border=False,
+        title=None,
     )
     status_widget = StatusWidget(
         parent=window,
         geometry=(0.5, 0.5, 1.0, 1.0),
-        border=True,
-        title="Status",
+        border=False,
+        title=None,
     )
-    status_widget.info("Status ok.")
+    status_widget.add("Status ok.")
 
     def _load():
         """ Load currently selected media file into player. """
@@ -71,17 +70,17 @@ def gui(window, client):
         logger.debug(client.load_path(path))
         subtitle = client.get_subtitle(path)
         subtitle_widget.display(subtitle)
-        status_widget.info(f"load {path}")
+        status_widget.add(f"load {path}")
         return path
 
     def _reload():
         """ Reload list of files in the current media directory. """
         paths = client.get_paths()
         if not isinstance(paths, list):
-            status_widget.error(paths)
+            status_widget.add(paths)
             return
         select_widget.set_paths(paths)
-        status_widget.info("Directory reloaded.")
+        status_widget.add("Directory reloaded.")
         return _load()
 
     path = _reload()
@@ -104,19 +103,19 @@ def gui(window, client):
                 name = status_widget.read('Export paths to: ')
                 marked = select_widget.get_marked()
                 response = client.export_list(name, marked)
-                status_widget.info(response)
+                status_widget.add(response)
             if c == ord("r"):
                 name = status_widget.read('Relocate files to: ')
                 marked = select_widget.get_marked()
                 response = client.relocate_media(name, marked)
                 _reload()
-                status_widget.info(response)
+                status_widget.add(response)
             if c in PASS_THROUGH:
                 client.pass_key(chr(c))
             if c == ord("x"):
                 1 / 0
             if c == ord("c"):
-                crash  # NOQA
+                colors.cycle()
             if c == ord("v"):
                 crush  # NOQA
             if c == ord("q"):
@@ -125,7 +124,7 @@ def gui(window, client):
             if c == ord("f"):
                 _reload()
         except Exception as error:
-            status_widget.error(str(error))
+            status_widger.add(str(error))
 
 
 def addr(text):

@@ -10,6 +10,8 @@ from curses import noecho
 from os.path import basename
 from logging import getLogger
 
+from . import colors
+
 logger = getLogger(__name__)
 
 
@@ -64,10 +66,12 @@ class BaseWidget:
 
         window = newwin(y2 - y1, x2 - x1, y1, x1)
 
+        window.attrset(colors.cycling)
         if self.border:
             window.border()
         if self.title:
             window.addstr(0, 2, f" {self.title} ")
+        window.attrset(0)
         return window
 
 
@@ -99,10 +103,12 @@ class SelectWidget(BaseWidget):
         return self.paths[self.pos1]
 
     def addstr(self, pos, selected=False):
-        args = [A_BOLD] if selected else []
-        prefix = '*' if pos in self.marked else ' '
+        prefix = (
+            ('*' if pos in self.marked else ' ') +
+            ('>' if selected else ' ')
+        )
         content = basename(self.paths[pos])
-        self.pad.addstr(pos, 0, prefix + content, *args)
+        self.pad.addstr(pos, 0, prefix + content, colors.cycling)
 
     def up(self):
         if self.pos1 > 0:
@@ -139,20 +145,16 @@ class SubtitleWidget(BaseWidget):
         h, w = self.window.getmaxyx()
         window = self.window.derwin(h - 2, w - 2, 1, 1)
         for y, line in enumerate(subtitle.split('\n')):
-            window.addstr(y, 0, line)
+            window.addstr(y, 0, line, colors.cycling)
         window.refresh()
 
 
 class StatusWidget(BaseWidget):
 
-    ERROR = 1
-    SUCCESS = 2
-    INFO = 3
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def add(self, message, *attr):
+    def add(self, message):
         """
         Scroll and Write a message in an inner window.
         """
@@ -160,17 +162,8 @@ class StatusWidget(BaseWidget):
         window = self.window.derwin(h - 2, w - 2, 1, 1)
         window.scrollok(True)
         window.scroll(1)
-        window.addstr(h - 3, 0, message, *attr)
+        window.addstr(h - 3, 0, message, colors.cycling)
         window.refresh()
-
-    def error(self, message):
-        self.add(message, color_pair(self.ERROR) | A_BOLD)
-
-    def success(self, message):
-        self.add(message, color_pair(self.SUCCESS) | A_BOLD)
-
-    def info(self, message):
-        self.add(message, color_pair(self.INFO) | A_BOLD)
 
     def read(self, text):
         """
