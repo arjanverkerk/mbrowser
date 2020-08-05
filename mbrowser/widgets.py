@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from curses import A_BOLD
-from curses import color_pair
 from curses import echo
 from curses import newpad
 from curses import newwin
@@ -135,18 +133,6 @@ class SelectWidget(BaseWidget):
 
     def get_marked(self):
         return [self.paths[i] for i in self.marked]
-
-
-class SubtitleWidget(BaseWidget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def display(self, subtitle):
-        h, w = self.window.getmaxyx()
-        window = self.window.derwin(h - 2, w - 2, 1, 1)
-        for y, line in enumerate(subtitle.split('\n')):
-            window.addstr(y, 0, line, colors.cycling)
-        window.refresh()
 
 
 class StatusWidget(BaseWidget):

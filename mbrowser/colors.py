@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 
 from curses import COLOR_BLACK
@@ -16,15 +18,15 @@ from curses import init_pair
 from curses import pair_content
 from curses import use_default_colors
 
-COLORS_ALL = {
-    "black": COLOR_BLACK,
-    "blue": COLOR_BLUE,
-    "cyan": COLOR_CYAN,
-    "green": COLOR_GREEN,
-    "magenta": COLOR_MAGENTA,
-    "red": COLOR_RED,
-    "white": COLOR_WHITE,
-    "yellow": COLOR_YELLOW,
+COLORS = {
+    COLOR_BLACK: "black",
+    COLOR_BLUE: "blue",
+    COLOR_CYAN: "cyan",
+    COLOR_GREEN: "green",
+    COLOR_MAGENTA: "magenta",
+    COLOR_RED: "red",
+    COLOR_WHITE: "white",
+    COLOR_YELLOW: "yellow",
 }
 
 
@@ -38,19 +40,20 @@ def initialize():
     module = sys.modules[__name__]
 
     # set standard colors on the module
-    for pair_no, (name, color_no) in enumerate(COLORS_ALL.items(), 1):
+    for pair_no, (color_no, name) in enumerate(COLORS.items(), 1):
         init_pair(pair_no, color_no, -1)
         setattr(module, name, color_pair(pair_no) | A_BOLD)
 
     # put a cycling color on pair 9
-    init_pair(9, COLOR_MAGENTA, -1)
+    init_pair(9, COLOR_CYAN, -1)
     module.cycling = color_pair(9) | A_BOLD
 
 
 def cycle():
     fg, bg = pair_content(9)
-    init_pair(9, ((fg + 1) % 8), bg)
-    return fg
+    new_fg = (fg + 1) % 8
+    init_pair(9, new_fg, bg)
+    return f"Color set to '{COLORS[new_fg]}'"
 
 
 """
