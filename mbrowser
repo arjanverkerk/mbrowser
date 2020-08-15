@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 mpv \
 --idle \
---fullscreen \
---force-window=yes \
 --keep-open=always \
+--script=$MBROWSER_HOME/mpv/scripts/init.lua \
+--input-conf=$MBROWSER_HOME/mpv/input.conf \
 --input-ipc-server=$MBROWSER_SOCKET \
