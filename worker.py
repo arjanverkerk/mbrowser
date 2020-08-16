@@ -14,13 +14,8 @@ CREATE = "create"
 DELETE = "delete"
 ROTATE = "rotate"
 
-EXTENSIONS = {"jpg", "jpeg", "mov", "mp4", "avi"}
 
 print('Worker running!')
-
-
-def is_media(filename):
-    return splitext(filename)[-1][1:].lower() in EXTENSIONS
 
 
 class Player:
@@ -29,11 +24,6 @@ class Player:
         socket = environ["MBROWSER_SOCKET"]
         self.client.connect(socket)
 
-        self.position = 0
-        self.playlist = sorted(filter(is_media, listdir()))
-        print(self.playlist)
-
-        self.loadfile()
 
     def send(self, message):
         """Send message. """
@@ -50,41 +40,51 @@ class Player:
             print(f"Player to worker: {message}")
         return messages
 
-    @property
-    def current(self):
-        return self.playlist[self.position]
-
-    def loadfile(self):
-        self.send({"command": ["loadfile", self.current]})
+    def loadfile(self, filename):
+        self.send({"command": ["loadfile", filename]})
         self.send({"command": ["set", "pause", "no"]})
 
     def showtext(self, text):
         self.send({"command": ["show-text", text]})
 
+
+class Files:
+
+    EXTENSIONS = {"jpg", "jpeg", "mov", "mp4", "avi"}
+    UNDO = "mbrowser_undo"
+
+    @classmethod
+    def is_media(cls, filename):
+        return splitext(filename)[-1][1:].lower() in cls.EXTENSIONS
+
+    def __init__(self):
+        self.position = 0
+        self.playlist = sorted(filter(self.is_media, listdir()))
+
     def prev(self):
-        if self.position > 0:
-            self.position -= 1
-            self.loadfile()
+        if self.position == 0:
+            return False
+        self.position -= 1
+        return True
 
     def next(self):
-        if self.position + 1 < len(self.playlist):
-            self.position += 1
-            self.loadfile()
+        if self.position + 1 ==  len(self.playlist):
+            return False
+        self.position += 1
+        return True
 
-
-def fakeop(player):
-    player.showtext("starting...")
-    sleep(1)
-    player.showtext("done!")
-    sleep(1)
+    @property
+    def current(self):
+        return self.playlist[self.position]
 
 
 def main():
     undolist = []  # noqa
     player = Player()
+    files = Files()
+    player.loadfile(files.current)
     while True:
         messages = player.recv()
-        print(type(messages))
         if messages is None:
             break
         for message in messages:
@@ -92,9 +92,11 @@ def main():
             if message.get("event") == "client-message":
                 args = message["args"]
                 if args[0] == "prev":
-                    player.prev()
+                    if files.prev():
+                        player.loadfile(files.current)
                 elif args[0] == "next":
-                    player.next()
+                    if files.next():
+                        player.loadfile(files.current)
                 # elif args[0] == 'create':
                     # player.send({"command": ["get", "ab-loop-a"]})
                     # player.send({"command": ["get", "ab-loop-b"]})
