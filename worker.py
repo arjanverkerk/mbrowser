@@ -5,6 +5,7 @@ from json import dumps
 from json import loads
 from os import environ
 from os import listdir
+from os.path import splitext
 from socket import AF_UNIX
 from socket import socket as Socket
 from time import sleep
@@ -13,7 +14,13 @@ CREATE = "create"
 DELETE = "delete"
 ROTATE = "rotate"
 
+EXTENSIONS = {"jpg", "jpeg", "mov", "mp4", "avi"}
+
 print('Worker running!')
+
+
+def is_media(filename):
+    return splitext(filename)[-1][1:].lower() in EXTENSIONS
 
 
 class Player:
@@ -23,7 +30,8 @@ class Player:
         self.client.connect(socket)
 
         self.position = 0
-        self.playlist = sorted(listdir())
+        self.playlist = sorted(filter(is_media, listdir()))
+        print(self.playlist)
 
         self.loadfile()
 
@@ -59,7 +67,7 @@ class Player:
             self.loadfile()
 
     def next(self):
-        if self.position < len(self.playlist) + 1:
+        if self.position + 1 < len(self.playlist):
             self.position += 1
             self.loadfile()
 
@@ -87,6 +95,9 @@ def main():
                     player.prev()
                 elif args[0] == "next":
                     player.next()
+                # elif args[0] == 'create':
+                    # player.send({"command": ["get", "ab-loop-a"]})
+                    # player.send({"command": ["get", "ab-loop-b"]})
                 else:
                     player.showtext(str(args))
 
