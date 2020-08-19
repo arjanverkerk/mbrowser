@@ -12,16 +12,15 @@ Keys that have no binding in mpv yet:
 
 -=: rotate
 ;': browse
+y: why? undo!
 k: remove (kill)
 c: create clip
-y: why? undo!
 
 
-- implement undo log with folder:
-  - timestamp.operation.original:
-    - so it is a stack that can be popped
-    - deleted - just put it back
-    - rotated - just overwrite original
-    - created - just remove the clip
-- refresh the playlist after removes / add clips
-- reload file after rotate
+operation:
+- create makes empty backup file
+- undoing that means just removing the created file
+- figure out names for created files, insert like undo delete
+- auto-orient if possible, rotate otherwise
+- better playlist / backups separation of concerns.
+- handling no files gracefully. (--force-window=yes?)
