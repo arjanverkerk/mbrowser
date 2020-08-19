@@ -23,6 +23,5 @@ y: why? undo!
     - deleted - just put it back
     - rotated - just overwrite original
     - created - just remove the clip
-- use mpv's show-text for any user information
 - refresh the playlist after removes / add clips
 - reload file after rotate

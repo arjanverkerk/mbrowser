@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
+# find the project dir from possible symlinked executable
+if [ -h "${BASH_SOURCE[0]}" ]
+then
+  SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+else
+  SCRIPT="${BASHSOURCE[0]}"
+fi
+export MBROWSER_HOME=$(dirname $SCRIPT)
+export MBROWSER_SOCKET=/tmp/mbrowser.socket
+
 mpv \
 --idle \
 --geometry=50%x44%+100%+0% \
 --keep-open=always \
---script=$MBROWSER_HOME/mpv/scripts/init.lua \
---input-conf=$MBROWSER_HOME/mpv/input.conf \
+--script=$MBROWSER_HOME/init.lua \
+--input-conf=$MBROWSER_HOME/input.conf \
 --input-ipc-server=$MBROWSER_SOCKET \
