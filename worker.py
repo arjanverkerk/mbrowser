@@ -49,6 +49,14 @@ class Player:
         self.send({"command": ["show-text", text]})
 
 
+class Playlist:
+    pass
+
+
+class Backup:
+    pass
+
+
 class Files:
 
     EXTENSIONS = {"jpg", "jpeg", "mov", "mp4", "avi"}
