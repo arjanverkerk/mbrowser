@@ -19,6 +19,30 @@ from subprocess import check_output
 
 
 # print('Worker running!')
+IMAGE = {
+    "jpeg",
+    "jpg",
+    "png",
+}
+VIDEO = {
+    "avi",
+    "mov",
+    "mp4",
+}
+MEDIA = IMAGE | VIDEO
+
+
+def is_image(filename):
+    return splitext(filename)[1][1:].lower() in IMAGE
+
+
+def is_video(filename):
+    return splitext(filename)[1][1:].lower() in VIDEO
+
+
+def is_media(filename):
+    return splitext(filename)[1][1:].lower() in MEDIA
+
 
 def can_auto_orient(filename):
     output = check_output(
@@ -65,13 +89,9 @@ class Player:
 
 
 class Playlist:
-    EXTENSIONS = {"jpg", "jpeg", "mov", "mp4", "avi"}
-    @classmethod
-    def is_media(cls, filename):
-        return splitext(filename)[1][1:].lower() in cls.EXTENSIONS
 
     def __init__(self):
-        self.items = sorted(filter(self.is_media, listdir()))
+        self.items = sorted(filter(is_media, listdir()))
         self.position = 0
 
     def __len__(self):
@@ -173,17 +193,21 @@ class Controller:
 
     def rotate(self, direction):
         filename = self.playlist.current
+        if is_video(filename):
+            return Falseffmpeg -i in.mov -vf "transpose=1" out.mov
+            command = f"ffmpeg -i {backuppath} -vf \"transpose=1\"
+            {targetpath}"
         backuppath = self.backup.put(filename)
-
         if can_auto_orient(backuppath):
             print("auto")
             # use -auto-orient
-            call(split(f"convert -auto-orient {backuppath} {filename}"))
+            command = f"convert -auto-orient {backuppath} {filename}"
         else:
             print("requested")
             # use requested direction
             degrees = {"left": 270, "right": 90}[direction]
-            call(split(f"convert -rotate {degrees} {backuppath} {filename}"))
+            command = f"convert -rotate {degrees} {backuppath} {filename}"
+        call(split(command))
         return True
 
     def delete(self):
@@ -215,6 +239,7 @@ class Controller:
                 if not message.get("event") == "client-message":
                     continue
                 command, *args = message["args"]
+                self.player.
                 if getattr(self, command)(*args):
                     self.player.loadfile(self.playlist.current)
 
