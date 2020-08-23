@@ -15,9 +15,21 @@ from socket import AF_UNIX
 from socket import socket as Socket
 from shlex import split
 from subprocess import call
+from subprocess import check_output
 
 
 # print('Worker running!')
+
+def can_auto_orient(filename):
+    output = check_output(
+        split(f"exiftool -veryshort --printconv -orientation {filename}"),
+    )
+    print(output)
+    if not output:
+        return False
+    if int(output.decode("ascii").split(":")[1].strip()) == 1:
+        return False
+    return True
 
 
 class Player:
@@ -42,6 +54,9 @@ class Player:
         return messages
 
     def loadfile(self, filename):
+        if filename is None:
+            self.send({"command": ["stop"]})
+            return
         self.send({"command": ["loadfile", filename]})
         self.send({"command": ["set", "pause", "no"]})
 
@@ -50,133 +65,163 @@ class Player:
 
 
 class Playlist:
-    pass
-
-
-class Backup:
-    pass
-
-
-class Files:
-
     EXTENSIONS = {"jpg", "jpeg", "mov", "mp4", "avi"}
-    HIST = "hist"
-
     @classmethod
     def is_media(cls, filename):
         return splitext(filename)[1][1:].lower() in cls.EXTENSIONS
 
     def __init__(self):
         self.items = sorted(filter(self.is_media, listdir()))
-        self.hist = sorted(listdir(self.HIST)) if exists(self.HIST) else []
-        self.pos = 0
+        self.position = 0
 
-    def backup(self):
-        """Backup current and return its path. """
-        # this is the file that's going
-        source = self.current
+    def __len__(self):
+        return len(self.items)
 
-        # remember its backup name
-        filename = f"{len(self.hist):04}.{self.current}"
-        self.hist.append(filename)
+    def remove(self):
+        """Remove and return current item from playlist."""
+        item = self.items.pop(self.position)
+        if self.position == len(self):
+            self.position -= 1
+        return item
 
-        # move it
-        makedirs(self.HIST, exist_ok=True)
-        target = join(self.HIST, filename)
-        rename(source, target)
+    def create(self):
+        """Return a free clipname basead on current."""
 
-        return target
-
-    def insert(self):
-        """Return filename right after current, and set it to current. """
-        # use bisect() & list.insert() & self.pos
-
-    def undo(self):
-        """Return True if something was changed, False otherwise. """
-        if not self.hist:
-            return False
-
-        source_name = self.hist.pop()
-        target = source_name[5:]
-        source_path = join(self.HIST, source_name)
-        rename(source_path, target)
+    def restore(self, filename):
+        """
+        """
+        # TODO looks like a clip and is a remove? remove & point to source vid
+        # else
         try:
-            self.pos = self.items.index(target)
+            self.position = self.items.index(filename)
         except ValueError:
-            self.pos = bisect(self.items, target)
-            self.items.insert(self.pos, target)
-        if not self.hist:
-            rmdir(self.HIST)
-        return True
+            self.position = bisect(self.items, filename)
+            self.items.insert(self.position, filename)
 
     def prev(self):
-        if self.pos == 0:
+        if self.position == 0:
             return False
-        self.pos -= 1
+        self.position -= 1
         return True
 
     def next(self):
-        if self.at_last():
+        if self.position == len(self) - 1:
             return False
-        self.pos += 1
+        self.position += 1
         return True
 
-    def at_last(self):
-        return self.pos + 1 == len(self.items)
+    @property
+    def current(self):
+        try:
+            return self.items[self.position]
+        except IndexError:
+            return None
+
+
+class Backup:
+    HIST = "hist"
+
+    def __init__(self):
+        self.hist = sorted(listdir(self.HIST)) if exists(self.HIST) else []
+
+    def put(self, filename):
+        """Backup filename and return the backup path. """
+        # TODO if it looks like a clip, write empty file. But, what if a clip
+        # gets subsequently deleted?
+        clip = False
+
+        # remember its backup name
+        backupname = f"{len(self.hist):04}.{filename}"
+        self.hist.append(backupname)
+
+        # move or create
+        makedirs(self.HIST, exist_ok=True)
+        backuppath = join(self.HIST, backupname)
+        if clip:
+            open(backuppath, 'w')
+        else:
+            rename(filename, backuppath)
+        return backuppath
+
+    def restore(self):
+        """Return True if something was changed, False otherwise. """
+        if not self.hist:
+            return None
+
+        backupname = self.hist.pop()
+        backuppath = join(self.HIST, backupname)
+        filename = backupname[5:]
+        rename(backuppath, filename)
+        if not self.hist:
+            rmdir(self.HIST)
+
+        return filename
+
+
+class Controller:
+    def __init__(self):
+        self.player = Player()
+        self.backup = Backup()
+        self.playlist = Playlist()
+        self.player.loadfile(self.playlist.current)
+
+    def prev(self, *args):
+        return self.playlist.prev()
+
+    def next(self, *args):
+        return self.playlist.next()
 
     def rotate(self, direction):
-        source = self.backup()
-        target = self.current
-        degrees = {"left": 270, "right": 90}[direction]
-        call(split(f"convert -rotate {degrees} {source} {target}"))
+        filename = self.playlist.current
+        backuppath = self.backup.put(filename)
+
+        if can_auto_orient(backuppath):
+            print("auto")
+            # use -auto-orient
+            call(split(f"convert -auto-orient {backuppath} {filename}"))
+        else:
+            print("requested")
+            # use requested direction
+            degrees = {"left": 270, "right": 90}[direction]
+            call(split(f"convert -rotate {degrees} {backuppath} {filename}"))
+        return True
 
     def delete(self):
-        self.backup()
-        pos = self.pos
-        if self.at_last():
-            self.pos -= 1
-        self.items.pop(pos)
+        filename = self.playlist.remove()
+        self.backup.put(filename)
+        return True
 
     def create(self, start, stop):
         """Create a clip next to current.
         """
-        source = self.current  # noqa
-        target = None  # noqa, clipfile
-        self.insert()
+        source = self.playlist.current
+        target = self.playlist.create()
+        source, target
+        return True
 
-    @property
-    def current(self):
-        return self.items[self.pos]
+    def undo(self):
+        filename = self.backup.restore()
+        if filename is None:
+            return False
+        self.playlist.restore(filename)
+        return True
+
+    def run(self):
+        while True:
+            messages = self.player.recv()
+            if messages is None:
+                break
+            for message in messages:
+                if not message.get("event") == "client-message":
+                    continue
+                command, *args = message["args"]
+                if getattr(self, command)(*args):
+                    self.player.loadfile(self.playlist.current)
 
 
 def main():
-    player = Player()
-    files = Files()
-    player.loadfile(files.current)
-    while True:
-        messages = player.recv()
-        if messages is None:
-            break
-        for message in messages:
-            if message.get("event") == "client-message":
-                args = message["args"]
-                if args[0] == "prev":
-                    if files.prev():
-                        player.loadfile(files.current)
-                elif args[0] == "next":
-                    if files.next():
-                        player.loadfile(files.current)
-                elif args[0] == "rotate":
-                    files.rotate(args[1])
-                    player.loadfile(files.current)
-                elif args[0] == "delete":
-                    files.delete()
-                    player.loadfile(files.current)
-                elif args[0] == "undo":
-                    if files.undo():
-                        player.loadfile(files.current)
-                else:
-                    player.showtext(str(args))
+    controller = Controller()
+    controller.run()
 
 
 if __name__ == "__main__":
