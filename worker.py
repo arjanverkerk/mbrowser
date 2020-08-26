@@ -150,6 +150,7 @@ class Backup:
     def __init__(self):
         try:
             self.hist = load(open(self.HIST + ".json"))
+            remove(self.HIST + ".json")
         except FileNotFoundError:
             self.hist = []
 
@@ -195,8 +196,9 @@ class Backup:
         return entry
 
     def save(self):
-        with open(self.HIST + ".json", "w") as f:
-            dump(self.hist, f)
+        if self.hist:
+            with open(self.HIST + ".json", "w") as f:
+                dump(self.hist, f)
 
 
 class Controller:
@@ -231,13 +233,14 @@ class Controller:
         return True
 
     def delete(self):
-        filename = self.playlist.remove()
-        self.backup.put(filename)
+        oldname = self.playlist.remove()
+        self.backup.append(oldname)
         return True
 
     def create(self, start, stop):
         """Create a clip next to current.
         """
+        print(start, stop)
         source = self.playlist.current
         target = self.playlist.create()
         source, target
