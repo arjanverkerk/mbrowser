@@ -9,7 +9,7 @@ from os import environ
 from os import listdir
 from os import remove
 from os import rename
-from os import makedirs
+from os import mkdir
 from os import rmdir
 from os.path import join
 from os.path import splitext
@@ -97,11 +97,11 @@ class Player:
 class Playlist:
 
     def __init__(self):
-        self.items = sorted(filter(is_media, listdir()))
+        self.filanemes = sorted(filter(is_media, listdir()))
         self.position = 0
 
     def __len__(self):
-        return len(self.items)
+        return len(self.filanemes)
 
     def prev(self):
         if self.position == 0:
@@ -118,13 +118,19 @@ class Playlist:
     @property
     def current(self):
         try:
-            return self.items[self.position]
+            return self.filanemes[self.position]
         except IndexError:
             return None
 
-    def remove(self):
+    def remove(self, filename=None):
         """Remove and return current item from playlist."""
-        item = self.items.pop(self.position)
+        # TODO if it looks like a clip, set player to source?
+        if filename is None:
+            index = self.position
+        else:
+            index = self.filanemes.index(filename)
+
+        item = self.filanemes.pop(index)
         if self.position == len(self):
             self.position -= 1
         return item
@@ -132,38 +138,40 @@ class Playlist:
     def insort(self, filename):
         """
         """
-        # TODO looks like a clip and is a remove? remove & point to source vid
-        # else
         try:
-            self.position = self.items.index(filename)
+            self.position = self.filanemes.index(filename)
         except ValueError:
-            self.position = bisect(self.items, filename)
-            self.items.insert(self.position, filename)
+            self.position = bisect(self.filanemes, filename)
+            self.filanemes.insert(self.position, filename)
 
     def create(self):
         """Return a free clipname basead on current."""
 
 
 class Backup:
-    HIST = "hist"
+    BAKDIR = "bak"
+    LOGPATH = "bak.json"
 
     def __init__(self):
         try:
-            self.hist = load(open(self.HIST + ".json"))
-            remove(self.HIST + ".json")
+            self.undolog = load(open(self.LOGPATH))
+            remove(self.LOGPATH)
         except FileNotFoundError:
-            self.hist = []
+            self.undolog = []
 
     def append(self, oldname=None, newname=None):
         """Push an undo entry, return bakpath."""
+        # dir
+        if not self.undolog:
+            mkdir(self.BAKDIR)
+
         # entry
-        bakname = f"{len(self.hist):04}.{oldname}"
-        self.hist.append({OLD: oldname, NEW: newname, BAK: bakname})
+        bakname = f"{len(self.undolog):04}.{oldname}"
+        self.undolog.append({OLD: oldname, NEW: newname, BAK: bakname})
 
         # move the old file
         if oldname is not None:
-            makedirs(self.HIST, exist_ok=True)
-            bakpath = join(self.HIST, bakname)
+            bakpath = join(self.BAKDIR, bakname)
             rename(oldname, bakpath)
             return bakpath
 
@@ -172,15 +180,15 @@ class Backup:
 
     def pop(self):
         """Undo the latest event, return the entry without the bakpath."""
-        if not self.hist:
+        if not self.undolog:
             return None
 
-        entry = self.hist.pop()
-
+        # entry
+        entry = self.undolog.pop()
         oldname = entry[OLD]
         newname = entry[NEW]
         bakname = entry.pop(BAK)
-        bakpath = join(self.HIST, bakname)
+        bakpath = join(self.BAKDIR, bakname)
 
         # create or modify-to-different-name
         if oldname is None or newname is not None and newname != oldname:
@@ -190,15 +198,16 @@ class Backup:
         if oldname is not None:
             rename(bakpath, oldname)
 
-        if not self.hist:
-            rmdir(self.HIST)
+        # dir
+        if not self.undolog:
+            rmdir(self.BAKDIR)
 
         return entry
 
     def save(self):
-        if self.hist:
-            with open(self.HIST + ".json", "w") as f:
-                dump(self.hist, f)
+        if self.undolog:
+            with open(self.LOGPATH, "w") as f:
+                dump(self.undolog, f)
 
 
 class Controller:
@@ -218,33 +227,49 @@ class Controller:
         oldname = self.playlist.current
         video = is_video(oldname)
 
-        newname = splitext(oldname)[0] + ".mp4" if video else oldname
+        if video:
+            newname = splitext(oldname)[0] + ".mp4"
+            if newname != oldname:
+                self.playlist.remove()
+                self.playlist.insort(newname)
+        else:
+            newname = oldname
+
         bakpath = self.backup.append(oldname=oldname, newname=newname)
 
         if video:
+            self.player.showtext("Transpose video...")
             value = {"left": "cclock", "right": "clock"}[direction]
             command = f"ffmpeg -i {bakpath} -vf transpose={value} {newname}"
         elif can_auto_orient(bakpath):
+            self.player.showtext("Auto-orient image...")
             command = f"convert -auto-orient {bakpath} {newname}"
         else:
+            self.player.showtext("Rotate image...")
             degrees = {"left": 270, "right": 90}[direction]
             command = f"convert -rotate {degrees} {bakpath} {newname}"
+
         call(split(command))
+        self.player.showtext("Done.")
         return True
 
     def delete(self):
-        oldname = self.playlist.remove()
-        self.backup.append(oldname)
+        filename = self.playlist.current
+        self.backup.append(oldname=filename)
+        self.playlist.remove()
         return True
 
     def create(self, start, stop):
-        """Create a clip next to current.
-        """
-        print(start, stop)
-        source = self.playlist.current
-        target = self.playlist.create()
-        source, target
-        return True
+        """Create a clip next to current."""
+        if not is_video(self.playlist.current):
+            return False
+        try:
+            start = f"{float(start):.2f}"
+            stop = f"{float(stop):.2f}"
+        except ValueError:
+            return False
+        self.player.showtext(f"Create clip from {start} to {stop}")
+        return False  # TODO
 
     def undo(self):
         mutation = self.backup.pop()
@@ -255,7 +280,7 @@ class Controller:
         newname = mutation[NEW]
 
         if oldname is None:
-            return self.playlist.remove(newname)
+            self.playlist.remove(newname)
 
         self.playlist.insort(oldname)
         return True
