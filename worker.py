@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from bisect import bisect
+from bisect import bisect_left
 from json import dump
 from json import dumps
 from json import load
@@ -97,11 +97,29 @@ class Player:
 class Playlist:
 
     def __init__(self):
-        self.filanemes = sorted(filter(is_media, listdir()))
+        self.filenames = sorted(filter(is_media, listdir()))
         self.position = 0
 
     def __len__(self):
-        return len(self.filanemes)
+        return len(self.filenames)
+
+    def __contains__(self, filename):
+        raise
+        return self._index(filename) is not None
+
+    def _index(self, filename):
+        raise
+        if self.filenames:
+            index = bisect_left(self.filenames, filename)
+            if self.filenames[index] == filename:
+                return index
+
+    @property
+    def current(self):
+        try:
+            return self.filenames[self.position]
+        except IndexError:
+            return None
 
     def prev(self):
         if self.position == 0:
@@ -115,42 +133,49 @@ class Playlist:
         self.position += 1
         return True
 
-    @property
-    def current(self):
-        try:
-            return self.filanemes[self.position]
-        except IndexError:
-            return None
-
     def remove(self, filename=None):
-        """Remove and return current item from playlist."""
+        """Remove item from playlist. and return current item from playlist."""
         # TODO if it looks like a clip, set player to source?
         if filename is None:
             index = self.position
         else:
-            index = self.filanemes.index(filename)
+            index = bisect_left(self.filenames, filename)
+            assert self.filenames[index] == filename
 
-        item = self.filanemes.pop(index)
+        item = self.filenames.pop(index)  # fails if filename not in list
         if self.position == len(self):
             self.position -= 1
         return item
 
-    def insort(self, filename):
+    def add(self, filename):
         """
+        Set filename as current, inserting it if needed.
         """
-        try:
-            self.position = self.filanemes.index(filename)
-        except ValueError:
-            self.position = bisect(self.filanemes, filename)
-            self.filanemes.insert(self.position, filename)
+        position = bisect_left(self.filenames, filename)
+        if position == len(self) or self.filenames[position] != filename:
+            self.filenames.insert(position, filename)
+        self.position = position
 
     def create(self):
-        """Return a free clipname basead on current."""
+        """
+        Insert new filename based on current and set as current.
+        """
+        root, ext = splitext(self.current)
+        count = 0
+        while True:
+            filename = f"{root}_{count:04}.mp4"
+            position = bisect_left(self.filenames, filename)
+            if position == len(self) or self.filenames[position] != filename:
+                break
+            count += 1
+        self.filenames.insert(position, filename)
+        self.position = position
+        return filename
 
 
 class Backup:
     BAKDIR = "bak"
-    LOGPATH = "bak.json"
+    LOGPATH = join(BAKDIR, "bak.json")
 
     def __init__(self):
         try:
@@ -191,7 +216,7 @@ class Backup:
         bakpath = join(self.BAKDIR, bakname)
 
         # create or modify-to-different-name
-        if oldname is None or newname is not None and newname != oldname:
+        if oldname is None or (newname is not None and newname != oldname):
             remove(newname)
 
         # delete or modify
@@ -223,15 +248,25 @@ class Controller:
     def next(self, *args):
         return self.playlist.next()
 
+    def delete(self):
+        filename = self.playlist.current
+        if filename is None:
+            return False
+        self.backup.append(oldname=filename)
+        self.playlist.remove()
+        return True
+
     def rotate(self, direction):
         oldname = self.playlist.current
+        if oldname is None:
+            return False
         video = is_video(oldname)
 
         if video:
             newname = splitext(oldname)[0] + ".mp4"
             if newname != oldname:
                 self.playlist.remove()
-                self.playlist.insort(newname)
+                self.playlist.add(newname)
         else:
             newname = oldname
 
@@ -253,23 +288,30 @@ class Controller:
         self.player.showtext("Done.")
         return True
 
-    def delete(self):
-        filename = self.playlist.current
-        self.backup.append(oldname=filename)
-        self.playlist.remove()
-        return True
-
     def create(self, start, stop):
         """Create a clip next to current."""
-        if not is_video(self.playlist.current):
+        oldname = self.playlist.current
+        if oldname is None:
+            return False
+        if not is_video(oldname):
             return False
         try:
             start = f"{float(start):.2f}"
             stop = f"{float(stop):.2f}"
         except ValueError:
             return False
+
+        newname = self.playlist.create()
+        self.backup.append(newname=newname)
+
         self.player.showtext(f"Create clip from {start} to {stop}")
-        return False  # TODO
+        command = (
+            f"ffmpeg -i {oldname} "
+            f"-ss {start} -to {stop} -c copy -map 0 {newname}"
+        )
+        call(split(command))
+        self.player.showtext("Done.")
+        return True
 
     def undo(self):
         mutation = self.backup.pop()
@@ -279,10 +321,14 @@ class Controller:
         oldname = mutation[OLD]
         newname = mutation[NEW]
 
-        if oldname is None:
+        # undo create or modify-to-different name
+        if oldname is None or (newname is not None and newname != oldname):
             self.playlist.remove(newname)
 
-        self.playlist.insort(oldname)
+        # undo delete or modify-to-different name
+        if newname is None or (oldname is not None and newname != oldname):
+            self.playlist.add(oldname)
+
         return True
 
     def run(self):

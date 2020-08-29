@@ -7,9 +7,10 @@ Here is a setup to use mpv as media browser and very simple selector / editor.
 Roadmap
 -------
 
-Creating clips!
-- how to name the files
-- actual ffmpeg command
+Smart goto when undoing clip create - the source? Implement a goto in the
+playlist.
+When creating:
+  Reset looping
 
 
 Keys
