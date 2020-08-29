@@ -93,6 +93,9 @@ class Player:
     def showtext(self, text):
         self.send({"command": ["show-text", text]})
 
+    def abloop(self):
+        self.send({"command": ["ab-loop"]})
+
 
 class Playlist:
 
@@ -132,6 +135,12 @@ class Playlist:
             return False
         self.position += 1
         return True
+
+    def goto(self, filename):
+        """ For experimental jump-to-source on create undo. """
+        position = bisect_left(self.filenames, filename)
+        if position != len(self):
+            self.position = position
 
     def remove(self, filename=None):
         """Remove item from playlist. and return current item from playlist."""
@@ -191,7 +200,10 @@ class Backup:
             mkdir(self.BAKDIR)
 
         # entry
-        bakname = f"{len(self.undolog):04}.{oldname}"
+        if oldname is not None:
+            bakname = f"{len(self.undolog):04}.{oldname}"
+        else:
+            bakname = None
         self.undolog.append({OLD: oldname, NEW: newname, BAK: bakname})
 
         # move the old file
@@ -213,7 +225,6 @@ class Backup:
         oldname = entry[OLD]
         newname = entry[NEW]
         bakname = entry.pop(BAK)
-        bakpath = join(self.BAKDIR, bakname)
 
         # create or modify-to-different-name
         if oldname is None or (newname is not None and newname != oldname):
@@ -221,6 +232,7 @@ class Backup:
 
         # delete or modify
         if oldname is not None:
+            bakpath = join(self.BAKDIR, bakname)
             rename(bakpath, oldname)
 
         # dir
@@ -311,6 +323,7 @@ class Controller:
         )
         call(split(command))
         self.player.showtext("Done.")
+        self.player.abloop()
         return True
 
     def undo(self):
@@ -328,6 +341,11 @@ class Controller:
         # undo delete or modify-to-different name
         if newname is None or (oldname is not None and newname != oldname):
             self.playlist.add(oldname)
+
+        # experimental goto clip source
+        if oldname is None:
+            root, ext = splitext(newname)
+            self.playlist.goto(root[:-5])
 
         return True
 
