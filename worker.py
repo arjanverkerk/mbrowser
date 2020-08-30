@@ -69,6 +69,11 @@ def can_auto_orient(filename):
     return True
 
 
+def get_srt(name_or_path):
+    root, ext = splitext(name_or_path)
+    return f"{root}.srt"
+
+
 class Player:
     def __init__(self):
         self.client = Socket(AF_UNIX)
@@ -206,21 +211,22 @@ class Backup:
         if not self.undolog:
             mkdir(self.BAKDIR)
 
-        # entry
-        if oldname is not None:
+        if oldname is None:  # create event
+            bakname = bakpath = None
+        else:  # delete or modify event
             bakname = f"{len(self.undolog):04}.{oldname}"
-        else:
-            bakname = None
-        self.undolog.append({OLD: oldname, NEW: newname, BAK: bakname})
-
-        # move the old file
-        if oldname is not None:
             bakpath = join(self.BAKDIR, bakname)
             rename(oldname, bakpath)
-            return bakpath
+            if newname is None:  # delete event
+                srtname = get_srt(oldname)
+                if exists(srtname):
+                    rename(srtname, get_srt(bakpath))
+
+        # entry
+        self.undolog.append({OLD: oldname, NEW: newname, BAK: bakname})
 
         # it is a create event, nothing was moved
-        return None
+        return bakpath
 
     def pop(self):
         """Undo the latest event, return the entry without the bakpath."""
@@ -233,14 +239,18 @@ class Backup:
         newname = entry[NEW]
         bakname = entry.pop(BAK)
 
-        # create or modify-to-different-name
+        # undoing create or modify-to-different-name
         if oldname is None or (newname is not None and newname != oldname):
             remove(newname)
 
-        # delete or modify
+        # undoing delete or modify
         if oldname is not None:
             bakpath = join(self.BAKDIR, bakname)
             rename(bakpath, oldname)
+            if newname is None:  # undoing delete
+                srtpath = get_srt(bakpath)
+                if exists(srtpath):
+                    rename(srtpath, get_srt(oldname))
 
         # dir
         if not self.undolog:
@@ -315,18 +325,23 @@ class Controller:
         if not is_video(oldname):
             return False
         try:
-            start = f"{float(start):.2f}"
-            stop = f"{float(stop):.2f}"
+            start_float = float(start)
+            stop_float = float(stop)
         except ValueError:
             return False
+
+        length_float = stop_float - start_float
+        start_str = f"{start_float:.2f}"
+        stop_str = f"{stop_float:.2f}"
+        length_str = f"{length_float:.2f}"
 
         newname = self.playlist.create()
         self.backup.append(newname=newname)
 
-        self.player.showtext(f"Create clip from {start} to {stop}")
+        self.player.showtext(f"Create clip from {start_str} to {stop_str}")
         command = (
-            f"ffmpeg -ss {start} -i {oldname} "
-            f"-to {stop} {newname}"
+            f"ffmpeg -ss {start_str} -i {oldname} "
+            f"-to {length_str} {newname}"
         )
         call(split(command))
         self.player.showtext("Done.")
@@ -360,8 +375,7 @@ class Controller:
         filename = self.playlist.current
         if filename is None:
             return False
-        root, ext = splitext(filename)
-        srtname = f"{root}.srt"
+        srtname = get_srt(filename)
         if not exists(srtname):
             with open(srtname, "w") as f:
                 f.write(SRT)
