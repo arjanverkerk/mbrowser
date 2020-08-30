@@ -11,6 +11,8 @@ from os import remove
 from os import rename
 from os import mkdir
 from os import rmdir
+from os import stat
+from os.path import exists
 from os.path import join
 from os.path import splitext
 from socket import AF_UNIX
@@ -36,6 +38,11 @@ MEDIA = IMAGE | VIDEO
 BAK = "bak"
 NEW = "new"
 OLD = "old"
+
+SRT = """1
+00:00:0,000 --> 00:10:00,000
+--- your text here ---
+"""
 
 
 def is_image(filename):
@@ -318,8 +325,8 @@ class Controller:
 
         self.player.showtext(f"Create clip from {start} to {stop}")
         command = (
-            f"ffmpeg -i {oldname} "
-            f"-ss {start} -to {stop} -c copy -map 0 {newname}"
+            f"ffmpeg -ss {start} -i {oldname} "
+            f"-to {stop} {newname}"
         )
         call(split(command))
         self.player.showtext("Done.")
@@ -346,6 +353,21 @@ class Controller:
         if oldname is None:
             root, ext = splitext(newname)
             self.playlist.goto(root[:-5])
+
+        return True
+
+    def annotate(self):
+        filename = self.playlist.current
+        if filename is None:
+            return False
+        root, ext = splitext(filename)
+        srtname = f"{root}.srt"
+        if not exists(srtname):
+            with open(srtname, "w") as f:
+                f.write(SRT)
+        call(split(f"mousepad {srtname}"))
+        if stat(srtname).st_size == 0:
+            remove(srtname)
 
         return True
 
