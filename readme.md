@@ -18,8 +18,9 @@ is not used here because it doesn't give frame-accurate trim positions.
 Roadmap
 -------
 
-Undo for annotation modifications.
-Tests.
+Possible further development directions:
+- Simpler annotation subs (only showing the subtitle itself in the editor)
+- A way to end the loop at the end of the video
 
 
 Keys
@@ -28,11 +29,11 @@ Keys
 Keys that have no binding in mpv yet:
 "abcghkny" + "-=;'"
 
-a edit subtitles ("annotate")
-- rotate left
-= rotate right
-; previous
 ' next
-y undo ("why...?")
-k remove ("kill")
+- rotate left (or auto-orient if possible)
+; previous
+= rotate right (or auto-orient if possible)
+a edit subtitles ("annotate")
 c create new clip from current ab-loop setting
+k remove ("kill")
+y undo ("why...?")
