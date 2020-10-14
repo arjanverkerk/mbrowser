@@ -30,8 +30,12 @@ IMAGE = {
 }
 VIDEO = {
     "avi",
+    "m4v",
     "mov",
     "mp4",
+    "mpeg",
+    "mpg",
+    "wmv",
 }
 MEDIA = IMAGE | VIDEO
 
