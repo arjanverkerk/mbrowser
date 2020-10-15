@@ -19,7 +19,6 @@ Roadmap
 -------
 
 Possible further development directions:
-- Simpler annotation subs (only showing the subtitle itself in the editor)
 - A way to end the loop at the end of the video
 
 

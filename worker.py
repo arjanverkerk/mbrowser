@@ -11,7 +11,6 @@ from os import remove
 from os import rename
 from os import mkdir
 from os import rmdir
-from os import stat
 from os.path import exists
 from os.path import join
 from os.path import splitext
@@ -20,6 +19,7 @@ from socket import socket as Socket
 from shlex import split
 from subprocess import call
 from subprocess import check_output
+from tempfile import NamedTemporaryFile
 
 
 # print('Worker running!')
@@ -45,7 +45,6 @@ OLD = "old"
 
 SRT = """1
 00:00:0,000 --> 00:10:00,000
---- your text here ---
 """
 
 
@@ -380,13 +379,24 @@ class Controller:
         if filename is None:
             return False
         srtname = get_srt(filename)
-        if not exists(srtname):
+        present = exists(srtname)
+        if present:
+            with open(srtname) as f:
+                text = f.read().lstrip(SRT)
+        else:
+            text = ""
+        with NamedTemporaryFile(mode="w+") as f:
+            if text:
+                f.write(text)
+                f.seek(0)
+            call(split(f"mousepad {f.name}"))
+            f.seek(0)
+            text = f.read()
+        if text:
             with open(srtname, "w") as f:
-                f.write(SRT)
-        call(split(f"mousepad {srtname}"))
-        if stat(srtname).st_size == 0:
+                f.write(SRT + text)
+        elif present:
             remove(srtname)
-
         return True
 
     def run(self):
