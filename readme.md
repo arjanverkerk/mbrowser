@@ -25,8 +25,10 @@ Possible further development directions:
 Keys
 ----
 
-Keys that have no binding in mpv yet:
+Keys that have no native binding in mpv:
 "abcghkny" + "-=;'"
+
+Bindings added by mbrowser:
 
 ' next
 - rotate left (or auto-orient if possible)
