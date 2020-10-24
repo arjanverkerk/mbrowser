@@ -8,6 +8,7 @@ else
 fi
 export MBROWSER_HOME=$(dirname $SCRIPT)
 export MBROWSER_SOCKET=/tmp/mbrowser.socket
+export MBROWSER_POSITION=$1
 
 mpv \
 --idle \

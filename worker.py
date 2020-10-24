@@ -36,6 +36,7 @@ VIDEO = {
     "mpeg",
     "mpg",
     "ogg",
+    "ogv",
     "wmv",
 }
 MEDIA = IMAGE | VIDEO
@@ -117,7 +118,11 @@ class Playlist:
 
     def __init__(self):
         self.filenames = sorted(filter(is_media, listdir()))
-        self.position = 0
+        try:
+            position = int(environ.get("MBROWSER_POSITION"))
+            self.position = min(len(self.filenames) - 1, max(0, position))
+        except (ValueError, TypeError):
+            self.position = 0
 
     def __len__(self):
         return len(self.filenames)
