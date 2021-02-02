@@ -14,9 +14,10 @@ Although it is possible to "copy" clips from a video stream using ffmpeg, this
 is not used here because it doesn't give frame-accurate trim positions.
 
 
-
 Roadmap
 -------
+
+- Some usage info in this document...
 
 Possible further development directions:
 - A way to end the loop at the end of the video
