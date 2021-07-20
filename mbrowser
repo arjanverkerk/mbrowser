@@ -14,7 +14,9 @@ mpv \
 --idle \
 --force-window=yes \
 --keep-open=always \
---geometry=50%x44%+100%+0% \
+--fullscreen \
 --script=$MBROWSER_HOME/init.lua \
 --input-conf=$MBROWSER_HOME/input.conf \
 --input-ipc-server=$MBROWSER_SOCKET \
+
+#--geometry=50%x44%+100%+0% \
