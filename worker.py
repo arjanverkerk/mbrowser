@@ -199,7 +199,7 @@ class Playlist:
                 break
             count += 1
         self.filenames.insert(position, filename)
-        self.position = position
+        # self.position = position  # jump to created item
         return filename
 
 
@@ -354,8 +354,8 @@ class Controller:
         )
         call(split(command))
         self.player.showtext("Done.")
-        self.player.abloop()
-        return True
+        self.player.abloop()  # resets ab-loop
+        # return True  # play current position in playlist
 
     def undo(self):
         mutation = self.backup.pop()
