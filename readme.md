@@ -36,6 +36,7 @@ Bindings added by mbrowser:
 ; previous
 = rotate right (or auto-orient if possible)
 a edit subtitles ("annotate")
+b stabilize  # using external "stabilize <input> <output>" command
 c create new clip from current ab-loop setting
 k remove ("kill")
 y undo ("why...?")

@@ -326,6 +326,20 @@ class Controller:
         self.player.showtext("Done.")
         return True
 
+    def stabilize(self):
+        oldname = self.playlist.current
+        if oldname is None:
+            return False
+        if not is_video(oldname):
+            return False
+        newname = oldname
+        bakpath = self.backup.append(oldname=oldname, newname=newname)
+        self.player.showtext("Stabilize video...")
+        command = f"vidstab {bakpath} {newname}"
+        call(split(command))
+        self.player.showtext("Done.")
+        return True
+
     def create(self, start, stop):
         """Create a clip next to current."""
         oldname = self.playlist.current
