@@ -37,6 +37,7 @@ VIDEO = {
     "mpg",
     "ogg",
     "ogv",
+    "vob",
     "wmv",
 }
 MEDIA = IMAGE | VIDEO
