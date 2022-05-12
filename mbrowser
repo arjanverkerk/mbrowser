@@ -4,7 +4,7 @@ if [ -h "${BASH_SOURCE[0]}" ]
 then
   SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
 else
-  SCRIPT="${BASHSOURCE[0]}"
+  SCRIPT="${BASH_SOURCE[0]}"
 fi
 export MBROWSER_HOME=$(dirname $SCRIPT)
 export MBROWSER_SOCKET=/tmp/mbrowser.socket
