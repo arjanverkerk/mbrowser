@@ -67,7 +67,7 @@ def can_auto_orient(filename):
     output = check_output(
         split(f"exiftool -veryshort --printconv -orientation {filename}"),
     )
-    print(output)
+    # print(output)
     if not output:
         return False
     if int(output.decode("ascii").split(":")[1].strip()) == 1:
@@ -88,7 +88,7 @@ class Player:
 
     def send(self, message):
         """Send message. """
-        # print(f"Worker to player: {message}")
+        # print(f'Worker to player: {message}')
         self.client.send((dumps(message) + '\n').encode("ascii"))
 
     def recv(self):
@@ -98,21 +98,21 @@ class Player:
             return None
         messages = [loads(line) for line in data.strip().split("\n")]
         # for message in messages:
-        #     print(f"Player to worker: {message}")
+        #     print(f'Player to worker: {message}')
         return messages
 
     def loadfile(self, filename):
         if filename is None:
-            self.send({"command": ["stop"]})
+            self.send({'command': ['stop']})
             return
-        self.send({"command": ["loadfile", filename]})
-        self.send({"command": ["set", "pause", "no"]})
+        self.send({'command': ['loadfile', filename]})
+        self.send({'command': ['set', 'pause', 'no']})
 
     def showtext(self, text):
-        self.send({"command": ["show-text", text]})
+        self.send({'command': ['show-text', text]})
 
     def abloop(self):
-        self.send({"command": ["ab-loop"]})
+        self.send({'command': ['ab-loop']})
 
 
 class Playlist:
@@ -120,7 +120,7 @@ class Playlist:
     def __init__(self):
         self.filenames = sorted(filter(is_media, listdir()))
         try:
-            position = int(environ.get("MBROWSER_POSITION"))
+            position = int(environ.get('MBROWSER_POSITION'))
             self.position = min(len(self.filenames) - 1, max(0, position))
         except (ValueError, TypeError):
             self.position = 0
@@ -434,6 +434,7 @@ class Controller:
 
     def save(self):
         self.backup.save()
+        print(f'Position: {self.playlist.position}')
 
 
 def main():
