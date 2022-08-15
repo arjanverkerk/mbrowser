@@ -435,6 +435,7 @@ class Controller:
     def save(self):
         self.backup.save()
         print(f'Position: {self.playlist.position}')
+        print(f'File: {self.playlist.current}')
 
 
 def main():
