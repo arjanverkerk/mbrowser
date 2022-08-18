@@ -406,13 +406,14 @@ class Controller:
                 text = f.read().lstrip(SRT)
         else:
             text = ""
-        with NamedTemporaryFile(mode="w+") as f:
+        with NamedTemporaryFile(mode="w") as f:
+            tmpname = f.name
             if text:
-                f.write(text)
-                f.seek(0)
-            call(split(f"mousepad {f.name}"))
-            f.seek(0)
-            text = f.read()
+                with open(tmpname, 'w') as f:
+                    f.write(text)
+            call(split(f"mousepad {tmpname}"))
+            with open(f.name) as f:
+                text = f.read()
         if text:
             with open(srtname, "w") as f:
                 f.write(SRT + text)
