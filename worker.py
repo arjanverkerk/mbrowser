@@ -39,6 +39,7 @@ VIDEO = {
     "ogv",
     "vob",
     "wmv",
+    "webm",
 }
 MEDIA = IMAGE | VIDEO
 
