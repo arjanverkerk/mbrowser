@@ -106,7 +106,10 @@ class Player:
         if filename is None:
             self.send({'command': ['stop']})
             return
-        self.send({'command': ['loadfile', filename]})
+        if is_image(filename):
+            self.send({'command': ['loadfile', filename, 'replace', 'demuxer=mf']})
+        else:
+            self.send({'command': ['loadfile', filename]})
         self.send({'command': ['set', 'pause', 'no']})
 
     def showtext(self, text):
