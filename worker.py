@@ -41,7 +41,10 @@ VIDEO = {
     "wmv",
     "webm",
 }
-MEDIA = IMAGE | VIDEO
+AUDIO = {
+    'mp3',
+}
+MEDIA = AUDIO | IMAGE | VIDEO
 
 BAK = "bak"
 NEW = "new"
@@ -302,6 +305,8 @@ class Controller:
     def rotate(self, direction):
         oldname = self.playlist.current
         if oldname is None:
+            return False
+        if is_audio(oldname):
             return False
         video = is_video(oldname)
 
