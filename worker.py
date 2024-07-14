@@ -55,6 +55,10 @@ SRT = """1
 """
 
 
+def is_audio(filename):
+    return splitext(filename)[1][1:].lower() in AUDIO
+
+
 def is_image(filename):
     return splitext(filename)[1][1:].lower() in IMAGE
 
@@ -412,7 +416,8 @@ class Controller:
         present = exists(srtname)
         if present:
             with open(srtname) as f:
-                text = f.read().lstrip(SRT)
+                text = f.read()[len(SRT):]
+                print("text:", text)
         else:
             text = ""
         with NamedTemporaryFile(mode="w") as f:
