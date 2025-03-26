@@ -6,6 +6,7 @@ from json import dumps
 from json import load
 from json import loads
 from os import environ
+from os import getenv
 from os import listdir
 from os import remove
 from os import rename
@@ -73,12 +74,11 @@ def is_media(filename):
 
 def can_auto_orient(filename):
     output = check_output(
-        split(f"exiftool -veryshort --printconv -orientation {filename}"),
+        split(f"exiftool -table --printconv -orientation {filename}"),
     )
-    # print(output)
     if not output:
         return False
-    if int(output.decode("ascii").split(":")[1].strip()) == 1:
+    if int(output.decode("ascii").strip()) == 1:
         return False
     return True
 
@@ -305,6 +305,19 @@ class Controller:
         self.backup.append(oldname=filename)
         self.playlist.remove()
         return True
+
+    def geotag(self):
+        filename = self.playlist.current
+        output = check_output(split(
+            f"exiftool -table --printconv -gpslatitude -gpslongitude {filename}"
+        ))
+        lat, lon = output.decode("ascii").strip().split()
+        if lat == "-":
+            print(f"No geotag found in {filename}")
+            return
+        url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom=12"
+        browser = getenv("BROWSER")
+        call(split(f"{browser} {url}"))
 
     def rotate(self, direction):
         oldname = self.playlist.current

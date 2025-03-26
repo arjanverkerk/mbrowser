@@ -32,6 +32,7 @@ Some of these keys are given a binding in mbrowser:
 a edit subtitles "(a)nnotate"
 b sta(b)ilize  # using external "vidstab <input> <output>" command
 c create new (c)lip from current ab-loop setting
+g open map at geotag location
 k remove "(k)ill"
 y undo "wh(y)...?"
 ```
